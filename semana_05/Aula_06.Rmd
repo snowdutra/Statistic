@@ -1,0 +1,211 @@
+---
+title: "Aula_06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Lista de exercícios 1 - Web Analytics
+
+A Quality Alloys é uma empresa B2B do grupo Special Steel Group. A expertise da empresa está na manufatura e distribuição de barras, forjados, anéis laminados e componentes semiacabados ou acabados em ligas de níquel, duplex, super duplex, aços inoxidáveis, ligas baixas e de carbono. 
+Assim, os produtos da empresa podem ser encontrados em peças que operam abaixo da superfície da Terra ou até no espaço sideral.
+O website da empresa utiliza o Google Analytics, que gerencia uma ampla variedade de métricas, tais como o número de visitas, o tempo que o visitante ficou no website, as páginas visitadas entre outros.
+
+a.	Gere um subconjunto da base apenas com as variáveis Week, Period, Average Time on Site e Profit.
+
+```{r}
+
+library(readxl)
+
+dados <- read_excel("Lista_de_exercicios_1.xlsx", sheet = "Weekly Visits")
+
+
+subconjunto <- dados[, c("Week (2008-2009)", "Period", "Avg. Time on Site (secs.)", "Profit")]
+
+colnames(subconjunto) <- c("Week", "Period", "Avg_Time_on_Site", "Profit")
+
+print(subconjunto)
+
+knitr::kable(head(subconjunto))
+
+```
+
+
+# b.	Renomeie as variáveis para Semana, Período, Tempo_no_site e Lucro. 
+```{r}
+
+colnames(subconjunto) <- c("Semana", "Período", "Tempo_no_site", "Lucro")
+
+knitr::kable(head(subconjunto))
+```
+
+# c.	Mude a classe da variável Período de “character” para “factor”. A ordem dos fatores deve ser Shakedown, Analysis 1, Promotion e Analysis 2.
+
+```{r}
+# Passo 1: Instalar e carregar a biblioteca necessária para ler arquivos Excel
+# Execute a linha abaixo apenas se você ainda não tiver o pacote "readxl" instalado
+# install.packages("readxl")
+library(readxl)
+
+# Passo 2: Ler o arquivo Excel
+# Certifique-se de que o arquivo "Lista_de_exercicios_1.xlsx" está no diretório de trabalho atual
+# ou forneça o caminho completo para o arquivo.
+dados <- read_excel("Lista_de_exercicios_1.xlsx", sheet = "Weekly Visits")
+
+# Passo 3: Gerar o subconjunto com as variáveis solicitadas
+# Selecionar as colunas desejadas: Week, Period, Avg. Time on Site e Profit
+subconjunto <- dados[, c("Week (2008-2009)", "Period", "Avg. Time on Site (secs.)", "Profit")]
+
+# Passo 4: Renomear as colunas para Semana, Período, Tempo_no_site e Lucro
+colnames(subconjunto) <- c("Semana", "Período", "Tempo_no_site", "Lucro")
+
+# Passo 5: Mudar a classe da variável Período para "factor" e definir a ordem dos fatores
+subconjunto$Período <- factor(subconjunto$Período, 
+                              levels = c("Shakedown", "Analysis 1", "Promotion", "Analysis 2"))
+
+# Passo 6: Exibir o subconjunto gerado
+print(subconjunto)
+
+# Passo 7: Verificar a classe da variável Período
+str(subconjunto$Período)
+
+```
+
+```{r}
+# Passo 1: Carregar a biblioteca ggplot2
+
+library(ggplot2)
+library(ggthemes)
+
+# Passo 2: Criar o diagrama de dispersão
+ggplot(subconjunto, aes(x = Tempo_no_site, y = Lucro, color = Período)) +
+  geom_point(size = 3, alpha = 0.7) +  # Adiciona os pontos ao gráfico
+  labs(
+    title = "Diagrama de Dispersão: Tempo Médio no Site vs Lucro",
+    x = "Tempo Médio no Site (segundos)",
+    y = "Lucro",
+    color = "Período"
+  ) +
+  theme_minimal() +  # Usa um tema minimalista
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),  # Centraliza e formata o título
+    axis.title.x = element_text(size = 12),  # Formata o título do eixo x
+    axis.title.y = element_text(size = 12),  # Formata o título do eixo y
+    legend.position = "bottom"  # Posiciona a legenda na parte inferior
+  ) +
+  scale_color_manual(values = c("Shakedown" = "#1f77b4", 
+                                "Analysis 1" = "#ff7f0e", 
+                                "Promotion" = "#2ca02c", 
+                                "Analysis 2" = "#d62728"))  # Define cores personalizadas para cada período
+
+```
+
+```{r}
+# Passo 1: Carregar a biblioteca ggplot2
+library(ggplot2)
+
+# Passo 2: Criar o box plot ordenado em ordem crescente
+ggplot(subconjunto, aes(x = reorder(Período, Lucro, FUN = median), y = Lucro, fill = Período)) +
+  geom_boxplot(alpha = 0.7) +  # Adiciona o box plot com transparência
+  labs(
+    title = "Box Plot: Lucro por Período (Ordenado)",
+    x = "Período",
+    y = "Lucro",
+    fill = "Período"
+  ) +
+  theme_minimal() +  # Usa um tema minimalista
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),  # Centraliza e formata o título
+    axis.title.x = element_text(size = 12),  # Formata o título do eixo x
+    axis.title.y = element_text(size = 12),  # Formata o título do eixo y
+    legend.position = "bottom"  # Posiciona a legenda na parte inferior
+  ) +
+  scale_fill_manual(values = c("Shakedown" = "#1f77b4", 
+                               "Analysis 1" = "#ff7f0e", 
+                               "Promotion" = "#2ca02c", 
+                               "Analysis 2" = "#d62728"))  # Define cores personalizadas para cada período
+```
+
+```{r}
+# Passo 1: Carregar as bibliotecas necessárias
+library(shiny)
+library(ggplot2)
+library(DT)
+
+# Passo 2: Definir a interface do usuário (UI)
+ui <- fluidPage(
+  titlePanel("Painel de Controle: Análise de Lucro e Tempo no Site"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("tempo", "Tempo no Site (segundos):", 
+                  min = min(subconjunto$Tempo_no_site), 
+                  max = max(subconjunto$Tempo_no_site), 
+                  value = c(min(subconjunto$Tempo_no_site), max(subconjunto$Tempo_no_site))
+    ),
+    
+    mainPanel(
+      tabsetPanel(
+        tabPanel("Diagrama de Dispersão", plotOutput("scatterplot")),
+        tabPanel("Box Plot", plotOutput("boxplot")),
+        tabPanel("Tabela", DTOutput("tabela"))
+      )
+    )
+  )
+)
+
+# Passo 3: Definir a lógica do servidor (Server)
+server <- function(input, output) {
+  # Filtrar os dados com base no intervalo de tempo selecionado
+  subconjunto <- reactive({
+    subset(subconjunto, Tempo_no_site >= input$tempo[1] & Tempo_no_site <= input$tempo[2])
+  })
+  
+  # Diagrama de dispersão
+  output$scatterplot <- renderPlot({
+    ggplot(dados_filtrados(), aes(x = Tempo_no_site, y = Lucro, color = Período)) +
+      geom_point(size = 3, alpha = 0.7) +
+      labs(
+        title = "Diagrama de Dispersão: Tempo no Site vs Lucro",
+        x = "Tempo no Site (segundos)",
+        y = "Lucro"
+      ) +
+      theme_minimal() +
+      scale_color_manual(values = c("Shakedown" = "#1f77b4", 
+                                   "Analysis 1" = "#ff7f0e", 
+                                   "Promotion" = "#2ca02c", 
+                                   "Analysis 2" = "#d62728"))
+  })
+  
+  # Box plot
+  output$boxplot <- renderPlot({
+    ggplot(dados_filtrados(), aes(x = reorder(Período, Lucro, FUN = median), y = Lucro, fill = Período)) +
+      geom_boxplot(alpha = 0.7) +
+      labs(
+        title = "Box Plot: Lucro por Período",
+        x = "Período",
+        y = "Lucro"
+      ) +
+      theme_minimal() +
+      scale_fill_manual(values = c("Shakedown" = "#1f77b4", 
+                                  "Analysis 1" = "#ff7f0e", 
+                                  "Promotion" = "#2ca02c", 
+                                  "Analysis 2" = "#d62728"))
+  })
+  
+  # Tabela interativa
+  output$tabela <- renderDT({
+    datatable(dados_filtrados()[, c("Semana", "Período", "Tempo_no_site", "Lucro")], 
+              options = list(pageLength = 5))
+  })
+}
+
+# Passo 4: Executar o aplicativo Shiny
+shinyApp(ui = ui, server = server)
+
+```
+
+
+
