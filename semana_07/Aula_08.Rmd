@@ -1,0 +1,210 @@
+---
+title: "Mapas e OSM"
+author: "Gustavo Dutra"
+date: "2025-03-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Mapas com o OpenStreetMap
+
+É um mapa colaborativo com código aberto.
+
+```{r, message = FALSE, warning = FALSE}
+library(leaflet)
+library(tidyverse)
+
+mapa <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = -46.6333, lat = -23.5505, zoom = 10)
+
+mapa
+
+```
+
+
+## Adicionando marcadores
+
+```{r}
+longitude <- c(-46.6333, -43.1729, -51.2177, 2.34840)
+latitude <- c(-23.5505, -22.9068, -30.0346, 48.8566)
+popup <- c("Moro aqui", "Rio", "POA", "Paris")
+
+mapa <- leaflet() %>%
+  addTiles() %>%
+  addMarkers(
+    lng = longitude,
+    lat = latitude,
+    popup = popup
+  )
+
+mapa
+
+```
+
+## O dataset World Cities
+
+O dataset world.cities contém informações sobre cidades ao redor do mundo, incluindo nome, país, população, latitude e longitude. Ele faz parte do pacote maps ou ggmap no R. 
+
+
+```{r}
+library(ggmap)
+library(maps)
+data(world.cities)
+
+brazil_cities <- world.cities %>%
+  filter(country.etc == "Brazil")
+
+knitr::kable(tail(brazil_cities, n = 10))
+```
+
+### Exercício 1
+
+Filtre as três capitais da Região Sul e insira marcadores com os nomes delas, utilizando o OpenStreetMap.
+
+```{r}
+library(dplyr)
+
+capital_sul <- brazil_cities %>%
+  filter(name %in% c("Curitiba", "Florianopolis", "Porto Alegre"))
+
+mapasul <- leaflet() %>%
+  addTiles() %>%
+  addMarkers(
+    lng = capital_sul$long,
+    lat = capital_sul$lat,
+    popup = capital_sul$name
+  )
+
+mapasul
+```
+
+### Exercício 2
+
+Criar um mapa no OSM com as 10 cidades mais populosas do Brasil. Deixe indicado a ordem.
+
+```{r}
+
+populosas <- brazil_cities %>%
+  arrange(desc(pop)) %>%
+  slice_head(n = 10)
+
+mapa_populoso <- leaflet() %>%
+  addTiles() %>%
+  addMarkers(
+    lng = populosas$long,
+    lat = populosas$lat,
+    popup = paste0(seq_len(nrow(populosas)), "º ", populosas$name)
+  )
+
+mapa_populoso
+
+```
+
+### A geometria polygon
+
+Serve para a construção de mapas.
+
+```{r}
+
+
+library(ggplot2)
+library(dplyr)
+library(maps)
+library(plotly)
+
+Brazil <- map_data("world") %>% # nolint
+  filter(region == "Brazil")
+
+data <- world.cities %>%
+  filter(country.etc == "Brazil")
+
+mapa1 <- ggplot() +
+  geom_polygon(data = Brazil,
+               aes(x = long, y = lat, group = group),
+               fill = "red", alpha = 0.3) +
+  geom_point(data = data, aes(x = long, y = lat)) +
+  theme_void() +
+  coord_map()
+
+ggplotly(mapa1)
+
+```
+
+Algumas melhorias no gráfico anterior
+
+```{r}
+library(ggrepel)
+library(dplyr)
+library(plotly)
+
+mapa2 <- ggplot() +
+  geom_polygon(
+    data = Brazil,
+    aes(x = long, y = lat, group = group),
+    fill = "darkcyan", alpha = 0.3
+  ) +
+  geom_point(
+    data = data,
+    aes(x = long, y = lat, alpha = pop)
+  ) +
+  geom_text(
+    data = data %>% arrange(pop) %>% tail(10),
+    aes(x = long, y = lat, label = name),
+    size = 5
+  ) +
+  geom_point(
+    data = data %>% arrange(pop) %>% tail(10),
+    aes(x = long, y = lat),
+    color = "red", size = 2
+  ) +
+  theme_void() +
+  coord_map() +
+  theme(legend.position = "none")
+
+ggplotly(mapa2)
+
+```
+
+### Aqui inicia a Aula 08
+
+```{r}
+library(viridis)
+
+mapa3 <- data %>%
+  arrange(pop) %>%
+  mutate(name = factor(name, unique(name))) %>%
+  ggplot() +
+  geom_polygon(
+    data = Brazil,
+    aes(x = long, y = lat, group = group),
+    fill = "grey", alpha = 0.3
+  ) +
+  geom_point(
+    aes(x = long, y = lat, size = pop, color = pop),
+    alpha = 0.9
+  ) +
+  scale_size_continuous(range = c(1, 12)) +
+  scale_color_viridis(trans = "log") +
+  theme_void() +
+  coord_map() +
+  theme(legend.position = "none")
+
+ggplotly(mapa3)
+
+```
+
+
+### Como raspar a geolocalização no OSM?
+
+É preciso usar um pacote chamado nominatimlite.
+
+```{r}
+library(nominatimlite)
+
+cidades <- c("Paris", "Londres", "Istambul", "Sao Paulo")
+geolocalizacao <- geo_lite(cidades)
+```

@@ -1,0 +1,164 @@
+---
+title: "Mapas e OSM"
+author: "Gustavo Dutra"
+date: "2025-03-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Mapass com OpenSteetMap
+
+```{r}
+library(leaflet)
+
+mapa <- leaflet() %>%
+  addTiles() %>%
+  setView(lng = -46.6333, lat = -23.5505, zoom = 10)
+
+mapa
+```
+
+
+## Adicionando marcadores
+
+```{r}
+longitude <- c(-46.6333, -43.1729, -51.2177, 2.3484)
+latitude <- c(-23.5505, -22.9068, -30.0346, 48.8566)
+
+mapa <- leaflet() %>%
+  addTiles() %>%
+  addMarkers(
+    lng = longitude,
+    lat = latitude,
+    popup = c("Moro aqui", "Rio", "POA", "Paris")
+  )
+
+mapa
+```
+
+## O dataset World Cities
+
+O dataset world.cities contém informações sobre cidades ao redor do mundo, incluindo nome, país, população, latitude e longitude. Ele faz parte do pacote maps ou ggmap no R. 
+
+```{r}
+library(ggmap)
+library(maps)
+library(dplyr)
+
+data("world.cities")
+
+brazil_cities <- world.cities %>%
+  filter(country.etc == "Brazil")
+
+tail(brazil_cities, n = 10)
+```
+
+```{r}
+library(dplyr)
+library(maps)
+library(leaflet)
+
+# Carregar o dataset world.cities
+data("world.cities")
+
+# Filtrar cidades do sul do Brasil
+sul_cities <- world.cities %>%
+  filter(country.etc == "Brazil", name %in% c("Curitiba", "Florianopolis", "Porto Alegre")) # nolint
+
+# Criar o mapa com marcadores
+mapa_sul <- leaflet() %>%
+  addTiles() %>%
+  addMarkers(
+    lng = sul_cities$long,
+    lat = sul_cities$lat,
+    popup = sul_cities$name
+  )
+
+# Exibir o mapa
+mapa_sul
+```
+
+
+```{r}
+library(dplyr)
+library(maps)
+library(leaflet)
+
+# Carregar o dataset world.cities
+data("world.cities")
+
+# Filtrar apenas cidades do Brasil e selecionar as 10 mais populosas
+top_10_cities <- world.cities %>%
+  filter(country.etc == "Brazil") %>%
+  arrange(desc(pop)) %>%
+  head(10)
+
+# Criar o mapa com os marcadores numerados
+mapa_top10 <- leaflet() %>%
+  addTiles() %>%
+  addMarkers(
+    lng = top_10_cities$long,
+    lat = top_10_cities$lat,
+    popup = paste0("#", 1:10, " - ", top_10_cities$name)
+  )
+
+# Exibir o mapa
+mapa_top10
+```
+
+### A geometria polygon
+
+Serve para a construção de mapas.
+
+```{r}
+Brazil <- map_data("world") |> # nolint
+  filter(region == "Brazil")
+
+data <- world.cities |>
+  filter(country.etc == "Brazil")
+
+ggplot() +
+  geom_polygon(data = Brazil,
+               aes(x = long, y = lat, group = group),
+               fill = "red", alpha = 0.3) +
+  geom_point(data = data, aes(x = long, y = lat)) +
+  theme_void() +
+  coord_map()
+```
+
+
+### Algumas melhorias no gráfico anterior
+
+```{r}
+library(ggrepel)
+
+ggplot() +
+  geom_polygon(
+    data = Brazil,
+    aes(x = long, y = lat, group = group),
+    fill = "darkcyan",
+    alpha = 0.3
+  ) +
+  geom_point(
+    data = data,
+    aes(x = long, y = lat, alpha = pop)
+  ) +
+  geom_text_repel(
+    data = data %>% arrange(pop) %>% tail(10),
+    aes(x = long, y = lat, label = name),
+    size = 5
+  ) +
+  geom_point(
+    data = data %>% arrange(pop) %>% tail(10),
+    aes(x = long, y = lat),
+    color = "red",
+    size = 3
+  ) +
+  theme_void() +
+  coord_map() +
+  theme(legend.position = "none")
+```
+

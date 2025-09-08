@@ -1,0 +1,73 @@
+---
+title: "Untitled"
+author: "Gustavo Dutra"
+date: "2025-03-27"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Web scraping
+
+A coleta de dados web, ou raspagem web, é uma forma de mineração que permite a extração de dados de sites da web convertendo-os em informação estruturada para posterior análise.
+
+```{r}
+library(rvest)
+library(tidyverse)
+library(knitr)
+
+url <- "https://impostometro.com.br/home/relacaoprodutos"
+tabela <- read_html(url) %>% html_table()
+
+kable(tabela[[1]])
+
+```
+
+
+Precisamos limpar a tabela para que R entenda que os números são números.
+
+```{r}
+acessorios <- tabela[[1]] %>%
+  rename(Itens = Acessórios, Tributacao = `% Tributação`) %>%
+  mutate(
+    Tributacao = gsub(",", ".", Tributacao),
+    Tributacao = gsub("%", "", Tributacao),
+    Tributacao = as.numeric(Tributacao)
+  ) %>%
+  arrange(desc(Tributacao))
+
+```
+
+### Bora fazer um gráfico
+
+Construa um gráfico de barras com o objetivo acessorios. Usar ploty para deixar
+o gráfico interativo.
+
+
+```{r}
+library(plotly)
+
+# Garantir a ordem das barras (do maior para menor tributação)
+acessorios$Itens <- factor(acessorios$Itens, levels = acessorios$Itens)
+
+# Criar gráfico interativo
+grafico <- plot_ly(
+  data = acessorios,
+  x = ~Itens,
+  y = ~Tributacao,
+  type = "bar",
+  marker = list(color = "#4CAF50")
+) %>%
+  layout(
+    title = "Tributação por Item",
+    xaxis = list(title = "Itens", tickangle = -45),
+    yaxis = list(title = "Tributação (%)"),
+    margin = list(b = 100)
+  )
+
+grafico
+ # nolint
+```
+
+

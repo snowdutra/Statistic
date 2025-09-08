@@ -1,0 +1,173 @@
+---
+title: "Aula04"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+## Exercícios 
+
+1) Use o comando select() para criar um subconjunto dos dados que inclua somente as colunas: escolaridade (educational level), se o respondente tem algum financiamento educacional (educational loan), situação de trabalho (employment status), e aprovação ao Governo (Trump approval). Apresente o objeto. Dica: consulte o dicionário de variáveis para identificar as variáveis corretas.
+
+```{r, message=FALSE}
+
+library(tidyverse)
+library(knitr)
+
+# Carregando e ajustando os dados
+cces <- read_csv("cces_sample.csv")
+cces$edloan[is.na(cces$edloan)] <- 2
+cces1 <- drop_na(cces)
+
+# Criando o subconjunto com as colunas solicitadas
+cces_subset <- cces1 %>% 
+  select(educ, edloan, employ, CC18_308a)
+
+# Apresentando o objeto
+cces_subset
+
+```
+
+2) Use o comando recode() para criar uma nova coluna no objeto anterior chamada
+"trump_approve_disapprove" que recodifica a variável “President Trump's job approval”.
+Um valor igual a "1" deve significar que o respondente ou "strongly" ou "somewhat"
+aprova o Governo, e o valor "0" deve significar que o respondente ou "strongly" ou
+"somewhat" desaprova o Governo Trump. Apresente os resultados do objeto no console.
+
+```{r}
+
+library(tidyverse)
+
+# Carregando e ajustando os dados
+cces <- read_csv("cces_sample.csv")
+cces$edloan[is.na(cces$edloan)] <- 2
+cces1 <- drop_na(cces)
+
+# Criando o subconjunto com as colunas solicitadas
+cces_subset <- cces1 %>%
+  select(educ, edloan, employ, CC18_308a)
+
+# Criando a nova coluna trump_approve_disapprove com recode()
+cces_subset <- cces_subset %>%
+  mutate(trump_approve_disapprove = recode(CC18_308a,
+                                           `1` = 1,  # Strongly approve -> 1
+                                           `2` = 1,  # Somewhat approve -> 1
+                                           `3` = 0,  # Somewhat disapprove -> 0
+                                           `4` = 0)) # Strongly disapprove -> 0
+
+# Apresentando o resultado no console
+cces_subset
+kable(head(cces_subset))
+
+```
+
+3) Use summarise() para criar um sumário dos respondentes que estão empregados em
+tempo integral e são casados. A tabela deve apresentar a média e a mediana da
+importância dada a religião.
+
+```{r}
+
+library(tidyverse)
+
+# Carregando e ajustando os dados
+cces <- read_csv("cces_sample.csv")
+cces$edloan[is.na(cces$edloan)] <- 2
+cces1 <- drop_na(cces)
+
+# Filtrando respondentes empregados em tempo integral e casados
+ex3 <- cces1 %>%
+  filter((marstat == 1 | marstat == 6) & employ == 1)
+
+# Sumário: média e mediana da importância dada à religião
+tabela <- ex3 %>%
+  summarise(
+    media = mean(pew_religimp, na.rm = TRUE),
+    mediana = median(pew_religimp, na.rm = TRUE)
+  )
+
+options(digits = 3)
+kable(tabela)
+
+```
+
+```
+
+Esse pacote vem instalado junto com o tidyverse e é útil para a construção de gráficos na linguagem R.
+
+```{r}
+# Leitura da base
+dados <- read.delim("https://www.stat.ubc.ca/~jenny/notOcto/STAT545A/examples/gapminder/data/gapminderDataFiveYear.txt", sep = "\t") # nolint
+
+dados1 <- subset(dados, year == 2007)
+
+```
+
+# Gráfico de barra
+
+```{r}
+library(ggplot2)
+library(ggthemes)
+
+ggplot(dados1, aes(x = continent, fill = continent)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Blues", direction = -1) +
+  labs(
+    title = "Quantidade de países por continentes",
+    subtitle = "Dados 2007",
+    x = "",
+    y = "Quantidade",
+    fill = "Continente"
+  ) +
+  guides(fill = "none") +
+  theme_economist()
+
+```
+
+# Bloxplot
+
+É utilizado no cruzamento de uma variável qualitativa (Continente) versus uma quantitativa (Expectativa de vida)
+
+```{r, echo = FALSE}
+
+ggplot(dados1, aes(x = continent, y = lifeExp, fill = continent)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Purples") +
+  labs(
+    title = "Expectativa de países por continentes",
+    subtitle = "Dados 2007",
+    x = "Continente",
+    y = "Expectativa de vida",
+    fill = "Continente"
+  ) +
+  guides(fill = "none") +
+  theme_economist()
+
+```
+
+# O diagrama  de dispersão
+
+É o gráfico utilizado no cruzamento de duas variáveis quantitativas.
+
+```{r, echo = FALSE}
+
+ggplot(dados1, aes(x = gdpPercap, y = lifeExp, color = continent)) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(
+    title = "Expectativa de países por continentes",
+    subtitle = "Dados 2007",
+    x = "PIB per capita",
+    y = "Expectativa de vida",
+    color = "Continente"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+```
+
+
+

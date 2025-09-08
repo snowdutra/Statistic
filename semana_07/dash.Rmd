@@ -1,0 +1,80 @@
+---
+title: "Untitled"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(dplyr)
+library(maps)
+library(ggrepel)
+library(viridis)
+library(plotly)
+library(leaflet)
+library(ggmap)
+
+data("world.cities")
+brazil_cities <- world.cities %>%
+  filter(country.etc == "Brazil")
+
+Brazil <- map_data("world") %>% # nolint
+  filter(region == "Brazil")
+
+data <- world.cities %>%
+  filter(country.etc == "Brazil")
+
+```
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Cidades mais populosas do Brasil
+
+```{r}
+populosas <- brazil_cities %>%
+  arrange(desc(pop)) %>%
+  head(10)
+
+mapa_populoso <- leaflet() %>%
+  addTiles() %>%
+  addMarkers(
+    lng = populosas$long,
+    lat = populosas$lat,
+    popup = paste0(seq_len(nrow(populosas)), "º ", populosas$name)
+  )
+
+mapa_populoso
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### O Brasil visto de cima
+
+```{r}
+mapa3 <- data %>%
+  arrange(pop) %>%
+  mutate(name = factor(name, unique(name))) %>%
+  ggplot() +
+  geom_polygon(
+    data = Brazil,
+    aes(x = long, y = lat, group = group),
+    fill = "grey", alpha = 0.3
+  ) +
+  geom_point(
+    aes(x = long, y = lat, size = pop, color = pop),
+    alpha = 0.9
+  ) +
+  scale_size_continuous(range = c(1, 12)) +
+  scale_color_viridis(trans = "log") +
+  theme_void() +
+  coord_map() +
+  theme(legend.position = "none")
+
+ggplotly(mapa3)
+```
